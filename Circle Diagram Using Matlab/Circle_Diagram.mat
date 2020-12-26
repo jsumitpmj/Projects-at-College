@@ -1,0 +1,319 @@
+%% For Clearing the Command Window and Workspace
+
+close 
+clear all 
+clc
+
+%% Main Program
+
+
+% Getting values from User
+% The test values are given in comment section you can try it
+
+motorkwa=input('Enter Motor Rating(W):\n=');                  % 2230 W
+In=input('Enter No load Current(A):\n=');                     % 0.22 A
+vn=input('Enter No load Voltage(V):\n=');                     % 400 V
+pn=input('Enter No load Power Input(W):\n=');                 % 30 W
+Ib=input('Enter Blocked rotor current(A):\n=');               % 2.8 A
+vb=input('Enter Blocked rotor voltage(V):\n=');               % 118 V
+pb=input('Enter Blocked rotor Power Input(W):\n=');           % 222 W
+
+cb=pb/(sqrt(3)*vb*Ib);
+cn=pn/(sqrt(3)*vn*In);
+sb=sqrt(1-cb*cb);
+sn=sqrt(1-cn*cn);
+Isn=Ib*(vn/vb);
+wsn=(pb)*((Isn/Ib)^2);
+
+scale=input('Enter the Scale for Current:\n=');               % 0.5 scale
+In2=In/scale;
+Isn2=Isn/scale;
+
+o=[0 0];
+a=[ In2*sn In2*cn];
+c=[ Isn2*sb Isn2*cb];
+d=[ c(1,1) (c(1,2)+a(1,2))/2];
+e=[c(1,1) a(1,2)];
+f=[c(1,1) 0];
+h=(a+c)/2;
+
+mac=(c(1,2)-a(1,2))/(c(1,1)-a(1,1));
+mad=(d(1,2)-a(1,2))/(d(1,1)-a(1,1));
+ps=wsn/c(1,2);
+addI=motorkwa/ps;
+I=[c(1,1) c(1,2)+addI];
+
+g=[0 a(1,2)];
+syms l;
+eq1=[((h(1,2)-a(1,2))/(h(1,1)- l)==(-1/mac))];
+S1=solve(eq1);
+g(1,1)=double(S1);
+
+syms jx jy; 
+eq=[(((jx-g(1,1))^2+(jy-g(1,2))^2==(a(1,1)-g(1,1))^2)),((I(1,2)-jy)/(I(1,1)-jx))-((c(1,2)-o(1,2))/(c(1,1)-o(1,1)))==0,jx>a(1,1),jy>0];
+S=solve(eq);
+k=double(S.jx);
+kk= double(S.jy);
+
+j=[k kk];
+
+n=[j(1,1) 0];
+ 
+m=[j(1,1) 0];
+
+% Solving for line intercept
+
+syms my ;
+eq2=[((my-c(1,2))/(c(1,2)-a(1,2)))==((j(1,1)-c(1,1))/(c(1,1)-a(1,1)))];
+S=solve(eq2);
+m(1,2)=S;
+m;
+
+% Solving for line circle intercept
+
+l=[ j(1,1) 0];
+syms ly ;
+eq3=[((ly-d(1,2))/(d(1,2)-a(1,2)))==((j(1,1)-d(1,1))/(d(1,1)-a(1,1)))];
+S3=solve(eq3);
+l(1,2)=S3;
+z=(a+d)/2;
+
+% Solving for line circle intercept
+
+syms px py
+eq4=[(((px-g(1,1))^2+(py-g(1,2))^2==(a(1,1)-g(1,1))^2)),((z(1,2)-py)/(z(1,1)-px))+1/mad==0,px>a(1,1),py>0,];
+S4=solve(eq4);
+k=double(S4.px);
+kk=double(S4.py);
+p=[k kk];
+
+% Solving for line circle intercept
+
+syms qx qy
+eq4=[(((qx-g(1,1))^2+(qy-g(1,2))^2==(a(1,1)-g(1,1))^2)),((h(1,2)-qy)/(h(1,1)-qx))+1/mac==0,qx>a(1,1),qy>0,];
+S4=solve(eq4);
+k=double(S4.qx);
+kk=double(S4.qy);
+
+q=[ k kk];
+
+r=[p(1,1) 0];
+
+r(1,2)=d(1,2)+mad*(p(1,1)-d(1,1));
+
+s=[q(1,1) 0];
+
+s(1,2)=c(1,2)+mac*(q(1,1)-c(1,1));
+s;
+
+x=[g(1,1) g(1,2)+(-a(1,1)+g(1,1))];
+
+% final result 
+
+% stator loss
+
+sl=d(1,2)-e(1,2);
+sl=sl*ps;
+fprintf('\nStator Loss = %d W\n',sl)
+
+% rotor loss
+
+rl= c(1,2)-d(1,2);
+rl=rl*ps;
+fprintf('\nRotor Loss = %d W\n',rl)
+
+% maxImum torqur
+
+tmax=p(1,2)-r(1,2);
+tmax=tmax*ps;
+fprintf('\nMaximum Torque = %d W\n',tmax)
+
+% maxImum output
+
+omax=q(1,2)-s(1,2);
+omax=omax*ps;
+fprintf('\nMaximum Output = %d W\n',omax)
+
+% full load current
+
+Ifull=sqrt(j(1,1)^2+j(1,2)^2)*scale;
+fprintf('\nMaximum Load Current = %d A\n',Ifull)
+
+% slip
+
+Spercent=((j(1,2)-m(1,2))/(j(1,2)-l(1,2)))*100;
+fprintf('\nSlip = %d percent \n',Spercent)
+
+%N
+
+percenteff=((j(1,2)-m(1,2))/j(1,2))*100;
+
+fprintf('\nEfficiency = %d percent \n',percenteff)
+
+oc=o(1,1) +o(1,2)*1i;
+ac=a(1,1) + a(1,2)*1i;
+nc=n(1,1) + n(1,2)*1i;
+mc=m(1,1) + m(1,2)*1i;
+lc=l(1,1) + l(1,2)*1i;
+jc=j(1,1) + j(1,2)*1i;
+fc=f(1,1) + f(1,2)*1i;
+ec=e(1,1) + e(1,2)*1i;
+dc=d(1,1) + d(1,2)*1i;
+cc=c(1,1) + c(1,2)*1i;
+Ic=I(1,1) + I(1,2)*1i;
+gc=g(1,1) + g(1,2)*1i;
+zc=z(1,1) + z(1,2)*1i;
+hc=h(1,1) + h(1,2)*1i;
+rc=r(1,1) + r(1,2)*1i;
+sc=s(1,1) + s(1,2)*1i;
+pc=p(1,1) + p(1,2)*1i;
+qc=q(1,1) + q(1,2)*1i;
+xc=x(1,1) + x(1,2)*1i;
+
+%Plotting
+
+hold on 
+plot(oc,'k*');
+plot(ac,'k.');
+plot(nc,'b.');
+plot(lc,'b.');
+plot(mc,'b.');
+plot(jc,'bo');
+plot(fc,'go');
+plot(ec,'go');
+plot(dc,'go');
+plot(cc,'go');
+plot(Ic,'go');
+plot(gc,'mo');
+plot(zc,'mo');
+plot(hc,'mo');
+plot(pc,'ro');
+plot(qc,'ro');
+plot(sc,'ro');
+plot(rc,'ro');
+plot(xc,'ro');
+
+% Labeling
+x = [real(oc) real(ac) real(nc) real(lc) real(mc) real(jc) real(fc) real(ec) real(dc) real(cc) real(Ic) real(gc) real(zc) real(hc) real(pc) real(qc) real(sc) real(rc) real(xc)];
+y = [imag(oc) imag(ac) imag(nc) imag(lc) imag(mc) imag(jc) imag(fc) imag(ec) imag(dc) imag(cc) imag(Ic) imag(gc) imag(zc) imag(hc) imag(pc) imag(qc) imag(sc) imag(rc) imag(xc)];
+labels = {'O','A','N','L','M','J','F','E','D','C','I','G','Z','H','P','Q','S','R','X'};
+plot(x,y,'o')
+text(x,y,labels,'VerticalAlignment','bottom','HorizontalAlignment','right')
+xlabel('Current(A)')
+ylabel('Voltage(V)')
+
+% line of
+
+x1=[ real(oc) real(fc)];
+y1=[ imag(oc) imag(fc)];
+plot(x1,y1,'-ko')
+
+wc=0+(I(1,2)+5)*1i;
+
+% line ow
+
+x2=[ real(oc) real(wc)];
+y2=[ imag(oc) imag(wc)];
+plot(x2,y2,'-ko')
+
+% line oa
+
+x3=[ real(oc) real(ac)];
+y3=[ imag(oc) imag(ac)];
+plot(x3,y3,'-ko')
+
+% line oc
+
+x4=[ real(oc) real(cc)];
+y4=[ imag(oc) imag(cc)];
+plot(x4,y4,'-ko')
+
+radii=g(1,1)-a(1,1);
+
+% line aa"'
+
+x5=[ real(ac) real(ac)+2*radii];
+y5=[ imag(ac) imag(ec)];
+plot(x5,y5,'-ko')
+
+% line ac
+
+x6=[ real(ac) real(cc)];
+y6=[ imag(ac) imag(cc)];
+plot(x6,y6,'-mo')
+
+% line ad
+
+x7=[ real(ac) real(dc)];
+y7=[ imag(ac) imag(dc)];
+plot(x7,y7,'-co')
+
+% line ji
+
+x8=[ real(jc) real(Ic)];
+y8=[ imag(jc) imag(Ic)];
+plot(x8,y8,'-ko')
+
+% line jn
+
+x1=[ real(jc) real(nc)];
+y1=[ imag(jc) imag(nc)];
+plot(x1,y1,'-ko')
+
+% line qs
+
+x1=[ real(qc) real(sc)];
+y1=[ imag(qc) imag(sc)];
+plot(x1,y1,'-ko')
+
+% line pr
+
+x1=[ real(pc) real(rc)];
+y1=[ imag(pc) imag(rc)];
+plot(x1,y1,'-ko')
+
+% line xg
+
+x1=[ real(xc) real(gc)];
+y1=[ imag(xc) imag(gc)];
+plot(x1,y1,'-ko')
+
+% line if
+
+x1=[ real(Ic) real(fc)];
+y1=[ imag(Ic) imag(fc)];
+plot(x1,y1,'-ko')
+
+% line ef
+
+x1=[ real(ec) real(fc)];
+y1=[ imag(ec) imag(fc)];
+plot(x1,y1,'-go')
+
+% line df
+
+x1=[ real(dc) real(fc)];
+y1=[ imag(dc) imag(fc)];
+plot(x1,y1,'-yo')
+
+% line cd
+
+x1=[ real(dc) real(cc)];
+y1=[ imag(dc) imag(cc)];
+plot(x1,y1,'-bo')
+
+
+x=g(1,1);
+y=g(1,2);
+
+    hold on
+    th = 0:pi/50:pi;
+    xunit = radii * cos(th) + x;
+    yunit = radii * sin(th) + y;
+     plot(xunit, yunit,'r');
+
+
+legend({'tq line= cyan','output line= magenta','fixed loss= green','rotor loss=blue','stator loss= yellow' })
+title('Circle Diagram of three phase induction motor')
+
+hold off
